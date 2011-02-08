@@ -10,7 +10,7 @@ class Controller_Awesome extends Controller {
 	{
 		$tmdb = Tmdb::factory('apikey');
 		
-		$results = $tmdb->search('Inception'); // Search		
+		$results = $tmdb->search_movie('Inception'); // Search
 		$info = $tmdb->movie_info(27205); // Movie info
 		$images = $tmdb->movie_images(27205); // Movie images
 		
