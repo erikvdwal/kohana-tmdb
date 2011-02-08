@@ -1,0 +1,21 @@
+A fairly simple class to access the TMDb API at http://api.themoviedb.org/.
+
+Usage:
+
+<?php defined('SYSPATH') or die('No direct script access.');
+
+class Controller_Awesome extends Controller {
+
+	public function action_index()
+	{
+		$tmdb = Tmdb::factory('apikey');
+		
+		$results = $tmdb->search('Inception'); // Search		
+		$info = $tmdb->movie_info(27205); // Movie info
+		$images = $tmdb->movie_images(27205); // Movie images
+		
+		// Alternatively
+		$results = Tmdb::factory('apikey')->search('Inception');
+	}
+
+}
