@@ -85,7 +85,8 @@ class Tmdb_Core
 	 */
 	public function __construct($apikey = null)
 	{
-		if (isset($apikey)) {
+		if (isset($apikey))
+		{
 			$this->set_api_key($apikey);
 		}
 	}
@@ -132,9 +133,11 @@ class Tmdb_Core
 	 */
 	public function set_format($format)
 	{
-		if (in_array($format, array(self::FORMAT_JSON, self::FORMAT_XML, self::FORMAT_YAML))) {
+		if (in_array($format, array(self::FORMAT_JSON, self::FORMAT_XML, self::FORMAT_YAML)))
+		{
 			$this->format = $format;
 		}
+
 		return $this;
 	}
 
@@ -258,15 +261,20 @@ class Tmdb_Core
 	public function browse_movie($order_by = 'rating', $order = 'asc', $page = 1, $per_page = 10, $params = array())
 	{
 		$params = (is_array($params) ? $params : array());
-		if (in_array($order_by, array('rating', 'release', 'title')) && in_array($order, array('asc', 'desc'))) {
+
+		if (in_array($order_by, array('rating', 'release', 'title')) && in_array($order, array('asc', 'desc')))
+		{
 			$params = array_merge($params, array(
 				'order_by'  => (string) $order_by,
 				'order'		=> (string) $order,
 				'page'		=> (int) $page,
 				'per_page'	=> (int) $per_page
 			));
+
 			return $this->request('Movie.browse', $params);
-		} else {
+		}
+		else
+		{
 			return null;
 		}
 	}
@@ -335,16 +343,23 @@ class Tmdb_Core
 	{
 		return $this->request('Person.search', (string) $name);
 	}
-	
+
+	/**
+	 * Add a movie rating for the authorized user.
+	 *
+	 * @param int $id movie id
+	 * @param float $rating rating
+	 * @param string $session session key
+	 */
 	public function movie_add_rating($id, $rating, $session)
 	{
 		$params = array(
 			'id'          => (int) $id,
 			'rating'      => (float) $rating,
-			'session_key' => (string) $session_key
+			'session_key' => (string) $session
 		);
 		
-		$this->request('Movie.addRating', $params, null, self::METHOD_POST);
+		return $this->request('Movie.addRating', $params, null, self::METHOD_POST);
 	}
 		
 	/**
@@ -391,21 +406,31 @@ class Tmdb_Core
 	{
 		$format = (isset($format) ? $format : $this->get_format());
 
-		if ($method == self::METHOD_GET) {
-			$url = self::BASE_URL . self::API_VERSION . '/' . (string) $function
-				 . ((substr($function, 0, 4) != 'Auth') ? '/' . $this->get_language() : '')
-				 . '/' . $this->get_format()
-				 . '/' . $this->get_api_key();
+		if ($method == self::METHOD_GET)
+		{
+			$url = self::BASE_URL.self::API_VERSION.'/'.(string) $function.((substr($function, 0, 4) != 'Auth') ? '/' . $this->get_language() : '').'/' . $this->get_format().'/' . $this->get_api_key();
 
-			if (isset($params)) {
-				$url .= (is_array($params) ? '?' . http_build_query($params, null, '&amp;') : '/' . urlencode($params));
+			if (isset($params))
+			{
+				if (is_array($params))
+				{
+					$params = http_build_query($params, null, '&amp;');
+				}
+				else
+				{
+					$params = explode('/', $params);
+					$params = array_map('urlencode', $params);
+					$params = '/' . implode('/', $params);
+				}
+
+				$url .= $params;
 			}
 
-			$data = Remote::get($url);
-			
-		} else {
-
-			$url = self::BASE_URL . self::API_VERSION . '/' . (string) $function;
+			$data = Remote::get($url);	
+		}
+		else
+		{
+			$url = self::BASE_URL.self::API_VERSION.'/'.(string) $function;
 
 			$params = (isset($params) ? (array) $params : array());
 			$params = array_merge($params, array(
@@ -413,10 +438,11 @@ class Tmdb_Core
 				'type'	  => $format
 			));
 
-			Remote::get($url, array('CURL_POST' => true, 'CURL_POSTFIELDS' => $params));
+			$data = Remote::get($url, array(CURLOPT_POST => true, CURLOPT_POSTFIELDS => $params));
 		}
 
-		switch ($this->get_format()) {
+		switch ($this->get_format())
+		{
 			case self::FORMAT_JSON:
 				return json_decode($data);
 				break;
