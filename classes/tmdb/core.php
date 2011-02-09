@@ -46,6 +46,16 @@ class Tmdb_Core
 	 * @var string
 	 */
 	const FORMAT_YAML = 'yaml';
+	
+	/**
+	 * HTTP POST method
+	 */
+	const METHOD_POST = 'POST';
+	
+	/**
+	 * HTTP GET method
+	 */
+	const METHOD_GET = 'GET';
 
 	/**
 	 * API key
@@ -325,6 +335,50 @@ class Tmdb_Core
 	{
 		return $this->request('Person.search', (string) $name);
 	}
+	
+	public function movie_add_rating($id, $rating, $session)
+	{
+		$params = array(
+			'id'          => (int) $id,
+			'rating'      => (float) $rating,
+			'session_key' => (string) $session_key
+		);
+		
+		$this->request('Movie.addRating', $params, null, self::METHOD_POST);
+	}
+		
+	/**
+	 * Get a token
+	 *
+	 * @return string
+	 */
+	public function get_token()
+	{
+		$data = $this->request('Auth.getToken');
+		return (string) $data->token;
+	}
+
+	/**
+	 * Get the url for a user to grant access th their account.
+	 *
+	 * @param string $token access token
+	 * @return string url to redirect to
+	 */
+	public function auth_url($token)
+	{
+		return sprintf('http://themoviedb.org/auth/%s', $token);
+	}
+	
+	/**
+	 * Get session
+	 *
+	 * @param string $token token
+	 * @return array|simple_xml_object|string
+	 */
+	public function get_session($token)
+	{
+		return $this->request('Auth.getSession', $token);
+	}
 
 	/**
 	 * Request data from the specified URL and convert it to
@@ -333,24 +387,35 @@ class Tmdb_Core
 	 * @param string $url to call
 	 * @return array|simple_xml_object|string
 	 */
-	private function request($function, $params = null)
+	private function request($function, $params = null, $format = null, $method = 'GET')
 	{
-		// build base url
-		$url = self::BASE_URL . self::API_VERSION
-			 . '/' . (string) $function
-			 . '/' . $this->get_language()
-			 . '/' . $this->get_format()
-			 . '/' . $this->get_api_key();
+		$format = (isset($format) ? $format : $this->get_format());
 
-		// add parameters
-		if (isset($params)) {
-			$url .= (is_array($params) ? '?' . http_build_query($params, null, '&amp;') : '/' . urlencode($params));
+		if ($method == self::METHOD_GET) {
+			$url = self::BASE_URL . self::API_VERSION . '/' . (string) $function
+				 . ((substr($function, 0, 4) != 'Auth') ? '/' . $this->get_language() : '')
+				 . '/' . $this->get_format()
+				 . '/' . $this->get_api_key();
+
+			if (isset($params)) {
+				$url .= (is_array($params) ? '?' . http_build_query($params, null, '&amp;') : '/' . urlencode($params));
+			}
+
+			$data = Remote::get($url);
+			
+		} else {
+
+			$url = self::BASE_URL . self::API_VERSION . '/' . (string) $function;
+
+			$params = (isset($params) ? (array) $params : array());
+			$params = array_merge($params, array(
+				'api_key' => $this->get_api_key(),
+				'type'	  => $format
+			));
+
+			Remote::get($url, array('CURL_POST' => true, 'CURL_POSTFIELDS' => $params));
 		}
 
-		// request data
-		$data = Remote::get($url);
-
-		// convert data based on the requested and returned format
 		switch ($this->get_format()) {
 			case self::FORMAT_JSON:
 				return json_decode($data);
